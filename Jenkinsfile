@@ -89,9 +89,9 @@ spec:
         stage('Run Cypress Tests') {
             steps {
                 container('cypress') {
-                    // Устанавливаем зависимости и запускаем тесты без цветных кодов для красоты логов
+                    // Устанавливаем зависимости и запускаем тесты
                     sh 'npm ci'
-                    sh 'npx cypress run --no-color'
+                    sh 'npx cypress run'
                 }
             }
         }
