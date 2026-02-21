@@ -77,11 +77,15 @@ spec:
         stage('Deploy to Kubernetes') {
             steps {
                 container('kubectl') {
-                    // Применяем манифест, который лежит в ТВОЕМ репозитории
                     sh 'kubectl apply -f k8s/main.yml'
                     
-                    // Ждем, пока поды поднимутся (у нас там liveness probes с задержкой 10 сек)
-                    sh 'sleep 45'
+                    echo 'Waiting for all deployments to be ready...'
+                    // Эта команда будет ждать до 2 минут, пока поды реально не запустятся
+                    sh 'kubectl rollout status deployment/gateway-deployment --timeout=120s'
+                    sh 'kubectl rollout status deployment/auth-deployment --timeout=120s'
+                    
+                    // Небольшой запас, чтобы само приложение внутри контейнера успело прогреться
+                    sh 'sleep 15'
                 }
             }
         }
