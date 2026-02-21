@@ -1,60 +1,112 @@
 pipeline {
-    agent any // Запускаем на любой доступной ноде Jenkins
-
-    environment {
-        // Указываем репозиторий приложения
-        APP_REPO = 'https://github.com/pavel-kazlou-innowise/titanic.git'
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  # 1. Контейнер для сборки образов
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:debug
+    command: ["sleep", "99d"]
+    volumeMounts:
+    - name: docker-config
+      mountPath: /kaniko/.docker/
+  # 2. Контейнер для общения с кластером (деплой)
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    command: ["sleep", "99d"]
+    user: "root"
+  # 3. Контейнер для запуска тестов
+  - name: cypress
+    image: cypress/included:13.6.0
+    command: ["sleep", "99d"]
+  volumes:
+  - name: docker-config
+    secret:
+      secretName: docker-credentials
+      items:
+        - key: .dockerconfigjson
+          path: config.json
+'''
+        }
     }
-
+    
     stages {
         stage('Checkout App Repo') {
             steps {
-                // Jenkins автоматически скачивает твой репо (cypress) в корень.
-                // А код приложения мы скачаем в отдельную папку 'app-source'
+                // Твой репозиторий с тестами Дженкинс скачивает сам по умолчанию.
+                // А вот код приложения нам нужно скачать отдельно в папку 'app-source'
                 dir('app-source') {
-                    git url: "${APP_REPO}", branch: 'main'
+                    git branch: 'main', url: 'https://github.com/pavel-kazlou-innowise/titanic.git'
                 }
             }
         }
-
-        stage('Build Docker Images') {
+        
+        stage('Build and Push Images (Kaniko)') {
             steps {
-                // Заходим в папку с приложением и собираем образы
-                dir('app-source') {
-                    bat 'docker build -t titanic-auth:v1 ./auth_service'
-                    bat 'docker build -t titanic-passenger:v1 ./passenger_service'
-                    bat 'docker build -t titanic-stats:v1 ./statistics_service'
-                    bat 'docker build -t titanic-gateway:v1 ./api_gateway'
+                container('kaniko') {
+                    // Собираем Auth
+                    sh '''
+                    /kaniko/executor --context `pwd`/app-source/auth_service \
+                    --dockerfile `pwd`/app-source/auth_service/Dockerfile \
+                    --destination antontratsevskii/titanic-auth:v1
+                    '''
+                    // Собираем Passenger
+                    sh '''
+                    /kaniko/executor --context `pwd`/app-source/passenger_service \
+                    --dockerfile `pwd`/app-source/passenger_service/Dockerfile \
+                    --destination antontratsevskii/titanic-passenger:v1
+                    '''
+                    // Собираем Stats
+                    sh '''
+                    /kaniko/executor --context `pwd`/app-source/statistics_service \
+                    --dockerfile `pwd`/app-source/statistics_service/Dockerfile \
+                    --destination antontratsevskii/titanic-stats:v1
+                    '''
+                    // Собираем Gateway
+                    sh '''
+                    /kaniko/executor --context `pwd`/app-source/api_gateway \
+                    --dockerfile `pwd`/app-source/api_gateway/Dockerfile \
+                    --destination antontratsevskii/titanic-gateway:v1
+                    '''
                 }
             }
         }
-
+        
         stage('Deploy to Kubernetes') {
             steps {
-                // Файл k8s/main.yml лежит в твоем репозитории, применяем его
-                bat 'kubectl apply -f k8s/main.yml'
-                
-                // Даем подам время на запуск (можно заменить на умный wait)
-                sleep time: 30, unit: 'SECONDS'
+                container('kubectl') {
+                    // Применяем манифест, который лежит в ТВОЕМ репозитории
+                    sh 'kubectl apply -f k8s/main.yml'
+                    
+                    // Ждем, пока поды поднимутся (у нас там liveness probes с задержкой 10 сек)
+                    sh 'sleep 45'
+                }
             }
         }
-
+        
         stage('Run Cypress Tests') {
             steps {
-                // Устанавливаем зависимости Cypress и запускаем тесты
-                // (Предполагается, что тесты стучатся на localhost:8000)
-                bat 'npm ci'
-                bat 'npx cypress run'
+                container('cypress') {
+                    // Устанавливаем зависимости и запускаем тесты без цветных кодов для красоты логов
+                    sh 'npm ci'
+                    sh 'npx cypress run --no-color'
+                }
             }
         }
     }
-
+    
     post {
         always {
-            // Этот блок выполнится ВСЕГДА: и если тесты прошли, и если упали.
-            // Убираем за собой мусор в Kubernetes.
-            echo 'Cleaning up Kubernetes resources...'
-            bat 'kubectl delete -f k8s/main.yml --ignore-not-found=true'
+            // Этот блок выполнится всегда: и при успехе, и при падении тестов
+            stage('Teardown') {
+                container('kubectl') {
+                    echo 'Cleaning up Kubernetes resources...'
+                    sh 'kubectl delete -f k8s/main.yml --ignore-not-found=true'
+                }
+            }
         }
     }
 }
