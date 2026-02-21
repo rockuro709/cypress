@@ -15,9 +15,8 @@ spec:
       mountPath: /kaniko/.docker/
   # 2. Контейнер для общения с кластером (деплой)
   - name: kubectl
-    image: bitnami/kubectl:latest
+    image: roffe/kubectl:latest
     command: ["sleep", "99d"]
-    user: "root"
   # 3. Контейнер для запуска тестов
   - name: cypress
     image: cypress/included:13.6.0
