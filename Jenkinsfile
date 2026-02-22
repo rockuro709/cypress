@@ -106,7 +106,7 @@ spec:
         always {
             script {
                 try {
-                    allure includeProperties: false, results: [[path: 'allure-results']]
+                    allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
                 } catch (Exception e) {
                     echo "Allure step failed. Please verify Allure Jenkins Plugin is INSTALLED in Plugins menu."
                     echo "Error detail: ${e.getMessage()}"
