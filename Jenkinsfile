@@ -104,20 +104,21 @@ spec:
     
     post {
         always {
-            container('cypress') {
-                script {
-                    echo 'Checking allure-results directory...'
-                    sh 'ls -la allure-results || true'
-                    
-                    echo 'Installing Java for Allure...'
-                    sh 'apt-get update && apt-get install -y default-jre'
-                    
-                    echo 'Generating Allure HTML report manually...'
-                    sh 'npx allure-commandline generate allure-results --clean -o allure-report || echo "Failed to generate report"'
+            script {
+                echo 'Checking allure-results directory (running in default jnlp container)...'
+                sh 'ls -la allure-results || true'
+                
+                try {
+                    allure([
+                        commandline: 'allure', 
+                        includeProperties: false, 
+                        jdk: '', 
+                        results: [[path: 'allure-results']]
+                    ])
+                } catch (Throwable e) {
+                    echo "Allure plugin failed: ${e.toString()}"
                 }
             }
-            
-            archiveArtifacts artifacts: 'allure-report/**', allowEmptyArchive: true
             
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
