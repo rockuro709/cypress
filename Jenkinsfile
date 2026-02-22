@@ -83,15 +83,10 @@ spec:
             }
         }
         
-        stage('Run Cypress Tests') {
+    stage('Run Cypress Tests') {
             steps {
                 container('cypress') {
-                    // 1. Install dependencies for ts-node support
-                    // 2. Run tests with ESM loader
-                    sh '''
-                        npm install
-                        NODE_OPTIONS="--loader ts-node/esm" CYPRESS_BASE_URL=http://gateway:8000 npm run test
-                    '''
+                    sh 'npm install && CYPRESS_BASE_URL=http://gateway:8000 npm run test'
                 }
             }
         }
