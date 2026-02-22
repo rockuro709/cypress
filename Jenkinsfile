@@ -98,8 +98,16 @@ spec:
     
     post {
         always {
-            // Эта команда ДОЛЖНА быть здесь, чтобы иконка появилась
-            allure results: [[path: 'allure-results']]
+            script {
+                // Используем явный вызов функции со всеми скобками
+                allure([
+                    includeProperties: false,
+                    jdk: '',
+                    properties: [],
+                    reportBuildPolicy: 'ALWAYS',
+                    results: [[path: 'allure-results']]
+                ])
+            }
             
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
