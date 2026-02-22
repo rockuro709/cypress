@@ -122,6 +122,15 @@ spec:
             
             archiveArtifacts artifacts: 'allure-report/**', allowEmptyArchive: true
             
+            publishHTML(target: [
+                allowMissing: false,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'allure-report',
+                reportFiles: 'index.html',
+                reportName: '📊 Allure Report'
+            ])
+            
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
                 sh 'kubectl delete -f k8s/main.yml --ignore-not-found=true'
