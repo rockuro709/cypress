@@ -13,3 +13,6 @@
 - [ ] **Parallel Execution**: Split Cypress tests into multiple pods for faster execution.
 - [ ] **Notification System**: Add Slack or Telegram webhooks to notify the team of build failures.
 - [ ] **Smoke Suite**: Define a subset of critical tests to run before the full E2E suite.
+
+
+Divide all-in-one file api.cy.ts to separate files for each layer: test-data, POM, services etc.
