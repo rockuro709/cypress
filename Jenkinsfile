@@ -109,6 +109,9 @@ spec:
                     echo 'Checking allure-results directory...'
                     sh 'ls -la allure-results || true'
                     
+                    echo 'Installing Java for Allure...'
+                    sh 'apt-get update && apt-get install -y default-jre'
+                    
                     echo 'Generating Allure HTML report manually...'
                     sh 'npx allure-commandline generate allure-results --clean -o allure-report || echo "Failed to generate report"'
                 }
