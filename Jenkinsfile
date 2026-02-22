@@ -50,25 +50,29 @@ spec:
                     sh '''
                     /kaniko/executor --context `pwd`/app-source/auth_service \
                     --dockerfile `pwd`/app-source/auth_service/Dockerfile \
-                    --destination antontratsevskii/titanic-auth:v1
+                    --destination antontratsevskii/titanic-auth:v1 \
+                    --cleanup
                     '''
                     // Собираем Passenger
                     sh '''
                     /kaniko/executor --context `pwd`/app-source/passenger_service \
                     --dockerfile `pwd`/app-source/passenger_service/Dockerfile \
-                    --destination antontratsevskii/titanic-passenger:v1
+                    --destination antontratsevskii/titanic-passenger:v1 \
+                    --cleanup
                     '''
                     // Собираем Stats
                     sh '''
                     /kaniko/executor --context `pwd`/app-source/statistics_service \
                     --dockerfile `pwd`/app-source/statistics_service/Dockerfile \
-                    --destination antontratsevskii/titanic-stats:v1
+                    --destination antontratsevskii/titanic-stats:v1 \
+                    --cleanup
                     '''
                     // Собираем Gateway
                     sh '''
                     /kaniko/executor --context `pwd`/app-source/api_gateway \
                     --dockerfile `pwd`/app-source/api_gateway/Dockerfile \
-                    --destination antontratsevskii/titanic-gateway:v1
+                    --destination antontratsevskii/titanic-gateway:v1 \
+                    --cleanup
                     '''
                 }
             }
@@ -106,7 +110,7 @@ spec:
             // Просто сразу обращаемся к контейнеру
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
-                //sh 'kubectl delete -f k8s/main.yml --ignore-not-found=true'
+                sh 'kubectl delete -f k8s/main.yml --ignore-not-found=true'
             }
         }
     }
