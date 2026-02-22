@@ -105,10 +105,12 @@ spec:
     post {
         always {
             script {
-                step([
-                    $class: 'io.qameta.allure.jenkins.AllureReportPublisher',
-                    results: [[path: 'allure-results']]
-                ])
+                try {
+                    allure includeProperties: false, results: [[path: 'allure-results']]
+                } catch (Exception e) {
+                    echo "Allure step failed. Please verify Allure Jenkins Plugin is INSTALLED in Plugins menu."
+                    echo "Error detail: ${e.getMessage()}"
+                }
             }
             
             container('kubectl') {
