@@ -43,6 +43,12 @@ spec:
       limits:
         memory: "2Gi"
         cpu: "1000m"
+  - name: allure-gen
+    image: timbru31/java-node:11-18
+    command: ["sleep", "99d"]
+    volumeMounts:
+    - mountPath: /home/jenkins/agent
+      name: workspace-volume
   volumes:
   - name: docker-config
     secret:
@@ -104,22 +110,13 @@ spec:
     
     post {
         always {
-            container('cypress') {
+            container('allure-gen') {
                 script {
                     echo 'Checking allure-results directory...'
                     sh 'ls -la allure-results || true'
                     
-                    echo 'Removing broken repos and installing Java...'
-                    sh '''
-                        rm -f /etc/apt/sources.list.d/google-chrome.list
-                        rm -f /etc/apt/sources.list.d/microsoft-edge*.list
-                        
-                        apt-get update
-                        apt-get install -y default-jre
-                        
-                        echo "Generating Allure report..."
-                        npx allure-commandline generate allure-results --clean -o allure-report
-                    '''
+                    echo "Generating Allure report..."
+                    sh 'npx allure-commandline generate allure-results --clean -o allure-report'
                 }
             }
             
