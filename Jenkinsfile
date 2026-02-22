@@ -6,8 +6,15 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-  # 1. Контейнер для сборки образов
+# 1. Первый контейнер Kaniko
   - name: kaniko
+    image: gcr.io/kaniko-project/executor:debug
+    command: ["sleep", "99d"]
+    volumeMounts:
+    - name: docker-config
+      mountPath: /kaniko/.docker/
+  # Добавляем второй контейнер Kaniko (и назовем его, например, kaniko2)
+  - name: kaniko2
     image: gcr.io/kaniko-project/executor:debug
     command: ["sleep", "99d"]
     volumeMounts:
@@ -45,34 +52,32 @@ spec:
         
         stage('Build and Push Images (Kaniko)') {
             steps {
+                // В первом контейнере собираем два образа
                 container('kaniko') {
-                    // Собираем Auth
                     sh '''
                     /kaniko/executor --context `pwd`/app-source/auth_service \
                     --dockerfile `pwd`/app-source/auth_service/Dockerfile \
-                    --destination antontratsevskii/titanic-auth:v1 \
-                    --cleanup
+                    --destination antontratsevskii/titanic-auth:v1
                     '''
-                    // Собираем Passenger
+                    // УБИРАЕМ ФЛАГ --cleanup везде!
                     sh '''
                     /kaniko/executor --context `pwd`/app-source/passenger_service \
                     --dockerfile `pwd`/app-source/passenger_service/Dockerfile \
-                    --destination antontratsevskii/titanic-passenger:v1 \
-                    --cleanup
+                    --destination antontratsevskii/titanic-passenger:v1
                     '''
-                    // Собираем Stats
+                }
+                // А вторые два образа собираем во втором контейнере!
+                // У него абсолютно чистая файловая система, поэтому конфликта кэшей pip не будет.
+                container('kaniko2') {
                     sh '''
                     /kaniko/executor --context `pwd`/app-source/statistics_service \
                     --dockerfile `pwd`/app-source/statistics_service/Dockerfile \
-                    --destination antontratsevskii/titanic-stats:v1 \
-                    --cleanup
+                    --destination antontratsevskii/titanic-stats:v1
                     '''
-                    // Собираем Gateway
                     sh '''
                     /kaniko/executor --context `pwd`/app-source/api_gateway \
                     --dockerfile `pwd`/app-source/api_gateway/Dockerfile \
-                    --destination antontratsevskii/titanic-gateway:v1 \
-                    --cleanup
+                    --destination antontratsevskii/titanic-gateway:v1
                     '''
                 }
             }
