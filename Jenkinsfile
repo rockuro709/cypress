@@ -87,20 +87,21 @@ spec:
             steps {
                 container('cypress') {
                     // We point baseUrl to the K8s service name
-                    sh 'CYPRESS_BASE_URL=http://gateway:8000 npm run test'
-                }
+                    sh 'NODE_OPTIONS="--loader ts-node/esm" CYPRESS_BASE_URL=http://gateway:8000 npm run test'                }
             }
         }
     }
     
     post {
         always {
-            // Generate Allure Report and attach it to Jenkins UI
             script {
-                allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
+                try {
+                    allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
+                } catch (Exception e) {
+                    echo "Allure report generation failed. Make sure the plugin is configured in Jenkins Tools."
+                }
             }
             container('kubectl') {
-                echo 'Cleaning up Kubernetes resources...'
                 sh 'kubectl delete -f k8s/main.yml --ignore-not-found=true'
             }
         }

@@ -15,7 +15,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-  "test": "npx cypress run --env allure=true",
+    "test": "npx cypress run --env allure=true",
     "report": "npx allure serve allure-results"
   },
   "dependencies": {
@@ -186,6 +186,7 @@
     "allure-commandline": "^2.36.0",
     "allure-cypress": "^3.4.5",
     "cypress": "^15.10.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "keywords": []
