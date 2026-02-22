@@ -86,7 +86,7 @@ spec:
     stage('Run Cypress Tests') {
             steps {
                 container('cypress') {
-                    sh 'npm install && CYPRESS_BASE_URL=http://gateway:8000 npm run test'
+                    sh 'npm install && CYPRESS_BASE_URL=http://gateway:8000 npx cypress run --browser electron'
                 }
             }
         }
