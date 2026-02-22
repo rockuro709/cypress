@@ -86,7 +86,11 @@ spec:
     stage('Run Cypress Tests') {
             steps {
                 container('cypress') {
-                    sh 'npm install && CYPRESS_BASE_URL=http://gateway:8000 npx cypress run --browser electron'
+                    // Используем --browser electron и --no-sandbox для стабильности в K8s
+                    sh '''
+                        npm install
+                        CYPRESS_BASE_URL=http://gateway:8000 npx cypress run --browser electron --config video=false,screenshot=false
+                    '''
                 }
             }
         }
@@ -94,13 +98,9 @@ spec:
     
     post {
         always {
-            script {
-                try {
-                    allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
-                } catch (Exception e) {
-                    echo "Allure report generation skipped. Check if the Allure plugin is configured in Jenkins Tools."
-                }
-            }
+            // Эта команда ДОЛЖНА быть здесь, чтобы иконка появилась
+            allure results: [[path: 'allure-results']]
+            
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
                 sh 'kubectl delete -f k8s/main.yml --ignore-not-found=true'
