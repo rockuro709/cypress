@@ -104,7 +104,15 @@ spec:
     
 post {
         always {
-            allure results: [[path: 'allure-results']]
+            // Прямой вызов плагина через step исключает конфликт имен
+            step([
+                $class: 'AllureReportPublisher',
+                includeProperties: false,
+                jdk: '',
+                properties: [],
+                reportBuildPolicy: 'ALWAYS',
+                results: [[path: 'allure-results']]
+            ])
             
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
