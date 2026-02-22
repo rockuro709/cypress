@@ -109,11 +109,12 @@ spec:
                     echo 'Checking allure-results directory...'
                     sh 'ls -la allure-results || true'
                     
-                    echo 'Fixing Google Chrome GPG keys and installing Java...'
+                    echo 'Removing broken repos and installing Java...'
                     sh '''
-                        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+                        rm -f /etc/apt/sources.list.d/google-chrome.list
+                        rm -f /etc/apt/sources.list.d/microsoft-edge*.list
                         
-                        apt-get update || true
+                        apt-get update
                         apt-get install -y default-jre
                         
                         echo "Generating Allure report..."
