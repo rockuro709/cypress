@@ -95,7 +95,7 @@ spec:
                 container('cypress') {
                     sh '''
                         npm install
-                        CYPRESS_BASE_URL=http://gateway:8000 npx cypress run --browser electron --config video=false,screenshotOnRunFailure=false
+                        CYPRESS_BASE_URL=http://gateway:8000 npx cypress run --browser electron --env allure=true --config video=false,screenshotOnRunFailure=false
                     '''
                 }
             }
