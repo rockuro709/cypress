@@ -105,11 +105,13 @@ spec:
     post {
         always {
             script {
+                echo 'Checking allure-results directory...'
+                sh 'ls -la allure-results || echo "Directory allure-results does NOT exist!"'
+                
                 try {
                     allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
-                } catch (Throwable e) { 
-                    echo "Allure step failed! Проверь плагин и настройки."
-                    echo "Error detail: ${e.toString()}"
+                } catch (Throwable e) {
+                    echo "Allure failed: ${e.toString()}"
                 }
             }
             
