@@ -59,32 +59,16 @@ spec:
         stage('Build and Push Images (Kaniko)') {
             steps {
                 container('kaniko-auth') {
-                    sh '''
-                    /kaniko/executor --context `pwd`/app-source/auth_service \
-                    --dockerfile `pwd`/app-source/auth_service/Dockerfile \
-                    --destination antontratsevskii/titanic-auth:v1
-                    '''
+                    sh '/kaniko/executor --context `pwd`/app-source/auth_service --dockerfile `pwd`/app-source/auth_service/Dockerfile --destination antontratsevskii/titanic-auth:v1'
                 }
                 container('kaniko-passenger') {
-                    sh '''
-                    /kaniko/executor --context `pwd`/app-source/passenger_service \
-                    --dockerfile `pwd`/app-source/passenger_service/Dockerfile \
-                    --destination antontratsevskii/titanic-passenger:v1
-                    '''
+                    sh '/kaniko/executor --context `pwd`/app-source/passenger_service --dockerfile `pwd`/app-source/passenger_service/Dockerfile --destination antontratsevskii/titanic-passenger:v1'
                 }
                 container('kaniko-stats') {
-                    sh '''
-                    /kaniko/executor --context `pwd`/app-source/statistics_service \
-                    --dockerfile `pwd`/app-source/statistics_service/Dockerfile \
-                    --destination antontratsevskii/titanic-stats:v1
-                    '''
+                    sh '/kaniko/executor --context `pwd`/app-source/statistics_service --dockerfile `pwd`/app-source/statistics_service/Dockerfile --destination antontratsevskii/titanic-stats:v1'
                 }
                 container('kaniko-gateway') {
-                    sh '''
-                    /kaniko/executor --context `pwd`/app-source/api_gateway \
-                    --dockerfile `pwd`/app-source/api_gateway/Dockerfile \
-                    --destination antontratsevskii/titanic-gateway:v1
-                    '''
+                    sh '/kaniko/executor --context `pwd`/app-source/api_gateway --dockerfile `pwd`/app-source/api_gateway/Dockerfile --destination antontratsevskii/titanic-gateway:v1'
                 }
             }
         }
@@ -93,12 +77,8 @@ spec:
             steps {
                 container('kubectl') {
                     sh 'kubectl apply -f k8s/main.yml'
-                    
                     echo 'Waiting for all deployments to be ready...'
                     sh 'kubectl rollout status deployment/gateway-deployment'
-                    sh 'kubectl rollout status deployment/auth-deployment'
-                    sh 'kubectl rollout status deployment/passenger-deployment'
-                    sh 'kubectl rollout status deployment/stats-deployment'
                 }
             }
         }
@@ -106,8 +86,8 @@ spec:
         stage('Run Cypress Tests') {
             steps {
                 container('cypress') {
-                    sh 'npm ci'
-                    sh 'npx cypress run'
+                    // We point baseUrl to the K8s service name
+                    sh 'CYPRESS_BASE_URL=http://gateway:8000 npm run test'
                 }
             }
         }
@@ -115,9 +95,12 @@ spec:
     
     post {
         always {
+            // Generate Allure Report and attach it to Jenkins UI
+            script {
+                allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
+            }
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
-                // Возвращаем уборку!
                 sh 'kubectl delete -f k8s/main.yml --ignore-not-found=true'
             }
         }

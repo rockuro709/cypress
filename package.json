@@ -2,20 +2,21 @@
   "name": "cypress",
   "version": "1.0.0",
   "description": "Cypress Sandbox",
-  "homepage": "https://github.com/antontratseuski-sudo/cypress#readme",
+  "homepage": "https://github.com/rockuro709/cypress#readme",
   "bugs": {
-    "url": "https://github.com/antontratseuski-sudo/cypress/issues"
+    "url": "https://github.com/rockuro709/cypress/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/antontratseuski-sudo/cypress.git"
+    "url": "git+https://github.com/rockuro709/cypress.git"
   },
   "license": "ISC",
   "author": "Anton Tratseuski",
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "test": "npx cypress run --env allure=true",
+    "report": "npx allure serve allure-results"
   },
   "dependencies": {
     "aggregate-error": "^3.1.0",
@@ -182,6 +183,8 @@
     "yauzl": "^2.10.0"
   },
   "devDependencies": {
+    "allure-commandline": "^2.36.0",
+    "allure-cypress": "^3.4.5",
     "cypress": "^15.10.0",
     "typescript": "^5.9.3"
   },
