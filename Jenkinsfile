@@ -102,12 +102,9 @@ spec:
         }
     }
     
-    post {
+post {
         always {
-            step([
-                $class: 'AllureReportPublisher',
-                results: [[path: 'allure-results']]
-            ])
+            allure results: [[path: 'allure-results']]
             
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
