@@ -106,12 +106,17 @@ spec:
         always {
             script {
                 echo 'Checking allure-results directory...'
-                sh 'ls -la allure-results || echo "Directory allure-results does NOT exist!"'
+                sh 'ls -la allure-results || true'
                 
                 try {
-                    allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
+                    allure([
+                        commandline: 'allure',
+                        includeProperties: false, 
+                        jdk: '', 
+                        results: [[path: 'allure-results']]
+                    ])
                 } catch (Throwable e) {
-                    echo "Allure failed: ${e.toString()}"
+                    echo "Allure step failed: ${e.toString()}"
                 }
             }
             
