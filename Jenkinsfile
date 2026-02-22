@@ -106,7 +106,7 @@ spec:
             // Просто сразу обращаемся к контейнеру
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
-                sh 'kubectl delete -f k8s/main.yml --ignore-not-found=true'
+                //sh 'kubectl delete -f k8s/main.yml --ignore-not-found=true'
             }
         }
     }
