@@ -115,6 +115,27 @@ spec:
                     echo 'Checking allure-results directory...'
                     sh 'ls -la allure-results || true'
                     
+                    echo 'Fetching Allure history from previous build...'
+                    try {
+                        copyArtifacts(
+                            projectName: env.JOB_NAME,     
+                            selector: lastCompleted(),    
+                            filter: 'allure-report/history/**', 
+                            optional: true                 
+                        )
+                        
+                        sh '''
+                            if [ -d "allure-report/history" ]; then
+                                echo "History found! Copying to allure-results..."
+                                cp -a allure-report/history allure-results/
+                            else
+                                echo "No history found. Skipping."
+                            fi
+                        '''
+                    } catch (Exception e) {
+                        echo "Warning: Failed to copy history. (Check if Copy Artifact plugin is installed): ${e.getMessage()}"
+                    }
+
                     echo "Generating Allure report..."
                     sh 'npx allure-commandline generate allure-results --clean -o allure-report'
                 }
