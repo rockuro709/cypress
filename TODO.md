@@ -16,3 +16,4 @@
 
 
 Divide all-in-one file api.cy.ts to separate files for each layer: test-data, POM, services etc.
+Add detailed comments?
