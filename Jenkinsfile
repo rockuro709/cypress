@@ -87,8 +87,10 @@ spec:
             steps {
                 container('cypress') {
                     // We point baseUrl to the K8s service name
-                    sh 'NODE_OPTIONS="--loader ts-node/esm" CYPRESS_BASE_URL=http://gateway:8000 npm run test'                }
-            }
+                    sh '''
+                        npm install
+                        NODE_OPTIONS="--loader ts-node/esm" CYPRESS_BASE_URL=http://gateway:8000 npm run test
+                    '''            }
         }
     }
     
