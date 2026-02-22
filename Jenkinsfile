@@ -104,21 +104,17 @@ spec:
     
     post {
         always {
-            script {
-                echo 'Checking allure-results directory...'
-                sh 'ls -la allure-results || true'
-                
-                try {
-                    allure([
-                        commandline: 'allure',
-                        includeProperties: false, 
-                        jdk: '', 
-                        results: [[path: 'allure-results']]
-                    ])
-                } catch (Throwable e) {
-                    echo "Allure step failed: ${e.toString()}"
+            container('cypress') {
+                script {
+                    echo 'Checking allure-results directory...'
+                    sh 'ls -la allure-results || true'
+                    
+                    echo 'Generating Allure HTML report manually...'
+                    sh 'npx allure-commandline generate allure-results --clean -o allure-report || echo "Failed to generate report"'
                 }
             }
+            
+            archiveArtifacts artifacts: 'allure-report/**', allowEmptyArchive: true
             
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
