@@ -104,21 +104,25 @@ spec:
     
     post {
         always {
-            script {
-                echo 'Checking allure-results directory (running in default jnlp container)...'
-                sh 'ls -la allure-results || true'
-                
-                try {
-                    allure([
-                        commandline: 'allure', 
-                        includeProperties: false, 
-                        jdk: '', 
-                        results: [[path: 'allure-results']]
-                    ])
-                } catch (Throwable e) {
-                    echo "Allure plugin failed: ${e.toString()}"
+            container('cypress') {
+                script {
+                    echo 'Checking allure-results directory...'
+                    sh 'ls -la allure-results || true'
+                    
+                    echo 'Fixing Google Chrome GPG keys and installing Java...'
+                    sh '''
+                        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+                        
+                        apt-get update || true
+                        apt-get install -y default-jre
+                        
+                        echo "Generating Allure report..."
+                        npx allure-commandline generate allure-results --clean -o allure-report
+                    '''
                 }
             }
+            
+            archiveArtifacts artifacts: 'allure-report/**', allowEmptyArchive: true
             
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
