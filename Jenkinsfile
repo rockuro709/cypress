@@ -36,6 +36,13 @@ spec:
   - name: cypress
     image: cypress/included:13.6.0
     command: ["sleep", "99d"]
+    resources:
+      requests:
+        memory: "2Gi"  
+        cpu: "1000m"   
+      limits:
+        memory: "2Gi"  
+        cpu: "1000m"
   volumes:
   - name: docker-config
     secret:
@@ -86,10 +93,11 @@ spec:
     stage('Run Cypress Tests') {
             steps {
                 container('cypress') {
-                    // Используем --browser electron и --no-sandbox для стабильности в K8s
                     sh '''
                         npm install
-                        CYPRESS_BASE_URL=http://gateway:8000 npx cypress run --browser electron --config video=false,screenshot=false
+                        CYPRESS_BASE_URL=http://gateway:8000 npx cypress run \
+                        --browser electron \
+                        --config video=false,screenshotOnRunFailure=false
                     '''
                 }
             }
@@ -98,16 +106,7 @@ spec:
     
     post {
         always {
-            script {
-                // Используем явный вызов функции со всеми скобками
-                allure([
-                    includeProperties: false,
-                    jdk: '',
-                    properties: [],
-                    reportBuildPolicy: 'ALWAYS',
-                    results: [[path: 'allure-results']]
-                ])
-            }
+            allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
             
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
