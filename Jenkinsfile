@@ -39,9 +39,9 @@ spec:
     resources:
       requests:
         memory: "2Gi"  
-        cpu: "1000m"   
+        cpu: "1000m"
       limits:
-        memory: "2Gi"  
+        memory: "2Gi"
         cpu: "1000m"
   volumes:
   - name: docker-config
@@ -84,20 +84,18 @@ spec:
             steps {
                 container('kubectl') {
                     sh 'kubectl apply -f k8s/main.yml'
-                    echo 'Waiting for all deployments to be ready...'
+                    echo 'Waiting for gateway...'
                     sh 'kubectl rollout status deployment/gateway-deployment'
                 }
             }
         }
         
-    stage('Run Cypress Tests') {
+        stage('Run Cypress Tests') {
             steps {
                 container('cypress') {
                     sh '''
                         npm install
-                        CYPRESS_BASE_URL=http://gateway:8000 npx cypress run \
-                        --browser electron \
-                        --config video=false,screenshotOnRunFailure=false
+                        CYPRESS_BASE_URL=http://gateway:8000 npx cypress run --browser electron --config video=false,screenshotOnRunFailure=false
                     '''
                 }
             }
@@ -106,7 +104,10 @@ spec:
     
     post {
         always {
-            allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
+            step([
+                $class: 'AllureReportPublisher',
+                results: [[path: 'allure-results']]
+            ])
             
             container('kubectl') {
                 echo 'Cleaning up Kubernetes resources...'
