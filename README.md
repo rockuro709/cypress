@@ -15,6 +15,20 @@ The core mission is to transition from traditional "localhost" testing to a **Cl
 
 ---
 
+## ⚙️ Automated Pipeline Lifecycle (How it Works)
+
+This project implements a fully automated, end-to-end workflow. Once a developer pushes new code or tests, the following sequence is triggered:
+
+1. **Trigger & SCM Sync**: The process begins by clicking **"Build Now"** in Jenkins. The pipeline immediately performs a dual checkout, pulling the latest microservices source code from the [App Repository](https://github.com/pavel-kazlou-innowise/titanic) and the test suites from the [Automation Repository](https://github.com/rockuro709/cypress).
+2. **Containerization (Kaniko)**: Jenkins initiates the **Build and Push** stage. Using **Kaniko**, the system builds Docker images for all four microservices (Auth, Passenger, Stats, Gateway) directly within the Kubernetes cluster and pushes them to **Docker Hub** with unique build-specific tags.
+3. **Cloud-Native Orchestration (Helm)**: The **Deploy** stage uses **Helm v3** to template Kubernetes manifests. It dynamically injects the new image tags and deploys the entire application stack into a dedicated namespace, ensuring proper **Service Discovery** via internal DNS (e.g., `http://gateway-service:8000`).
+4. **Automated Validation (Cypress)**: Once the environment is ready, a specialized **Cypress pod** is launched to run the E2E API test suites against the deployed services.
+5. **Analytics & Reporting (Allure)**: After test execution, the **allure-gen** container processes the results, fetches historical data from previous runs, and generates a comprehensive **Allure Report** with trend visualizations.
+6. **Environment Decommissioning**: To maintain a "Zero-Waste" infrastructure, the `post-build` stage executes a **Helm uninstall**, completely removing the application pods and services from the cluster.
+7. **Registry Pruning**: Finally, the pipeline connects to the **Docker Hub API** to delete obsolete image tags, keeping only the 8 most recent versions to optimize cloud storage and maintain registry hygiene.
+
+---
+
 ### 🛠 Full Technology Stack Reference
 
 #### 1. Application Layer (The "Titanic" App)
