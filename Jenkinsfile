@@ -142,7 +142,7 @@ spec:
                                     COUNT=0
                                     for TAG in \$TAGS; do
                                         COUNT=\$((COUNT+1))
-                                        if [ \$COUNT -le 8 ]; then
+                                        if [ \$COUNT -le 2 ]; then
                                             echo "Keeping tag: \$TAG"
                                         else
                                             echo "Deleting old tag: \$TAG"
