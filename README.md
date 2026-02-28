@@ -71,125 +71,132 @@ This project implements a fully automated, end-to-end workflow. Once a developer
 
 ---
 
-## 🚀 Step-by-Step Setup Guide
+This guide provides a comprehensive walkthrough for deploying the **Titanic Microservices** automation ecosystem on your local workstation, reflecting the specific manual configuration and custom reporting logic used in this project.
 
-Follow these instructions to replicate the entire environment on your local machine.
+---
 
-### 1. Environment Preparation
+# 🚀 Local Reproduction Guide
 
-1. **Install Docker Desktop**: Download and install it from [docker.com](https://www.docker.com/).
+## 📋 Prerequisites
+
+1. **Docker Desktop**: [Download and install](https://www.docker.com/products/docker-desktop/).
 2. **Enable Kubernetes**:
-* Open Docker Desktop Settings.
-* Go to **Kubernetes** tab.
+* Go to **Settings** -> **Kubernetes**.
 * Check **Enable Kubernetes** and click **Apply & Restart**.
 
 
-3. **Install kubectl**: Ensure you have the command-line tool by running `kubectl version` in your terminal.
+3. **CLI Tools**: Ensure `kubectl` and `helm` are installed and available in your terminal.
 
-### 2. Infrastructure Setup
+---
 
-1. **Create Namespace**:
+## 🛠 Step 1: Infrastructure & Registry Security
+
+### 1. Create the Namespace
+
+Isolate the CI/CD environment from the rest of the cluster:
+
 ```powershell
 kubectl create namespace jenkins
 
 ```
 
+### 2. Configure Docker Hub Secret
 
-2. **Configure Docker Credentials**:
-Jenkins needs permission to push images to your Docker Hub. Create a K8s secret:
+To allow **Kaniko** to push images and the **Cleanup Stage** to manage your registry, create the registry secret using your credentials (username, Personal Access Token, and email):
+
 ```powershell
-kubectl create secret generic docker-credentials `
-  --from-file=.dockerconfigjson=$HOME/.docker/config.json `
-  --type=kubernetes.io/dockerconfigjson -n jenkins
+kubectl create secret docker-registry docker-credentials `
+  --docker-server=https://index.docker.io/v1/ `
+  --docker-username=<YOUR_USERNAME> `
+  --docker-password=<YOUR_ACCESS_TOKEN> `
+  --docker-email=<YOUR_EMAIL> `
+  -n jenkins
 
 ```
 
+---
 
+## 🏗 Step 2: Accessing Jenkins
 
-### 3. Deploy & Access Jenkins
+### 1. Ensure Jenkins is Running
 
-1. **Deploy Jenkins**: Apply your Jenkins manifests (assumes you have a `jenkins.yml`).
-2. **Establish Connection**:
-Open a **PowerShell** window and keep it running:
+Verify that the Jenkins controller is active in your cluster:
+
 ```powershell
-kubectl --namespace jenkins port-forward svc/my-jenkins 8080:8080
+kubectl get pods -n jenkins
 
 ```
 
+### 2. Establish the Tunnel (Port Forwarding)
 
-*Note: If Jenkins restarts, this connection will drop and must be restarted*.
-3. **Login**: Open `http://localhost:8080` in your browser.
+Because Jenkins runs inside the cluster, use the following command to access the web interface from your browser:
 
-### 4. Jenkins Configuration
+```powershell
+kubectl --namespace jenkins port-forward svc/my-jenkins 8080:8080 --address 0.0.0.0
 
-1. **Install Plugins**: Go to *Manage Jenkins -> Plugins* and install:
-* `Kubernetes`
-* `HTML Publisher`
-* `Copy Artifact`
+```
 
-
-2. **Global Tools**: Go to *Manage Jenkins -> Tools*. Add an Allure Commandline tool named **`allure`**.
+* **Access URL**: [http://localhost:8080](https://www.google.com/search?q=http://localhost:8080)
+* **Important**: Keep this terminal window open; closing it will drop the connection to Jenkins.
 
 ---
 
-## 🏗 Pipeline Logic
+## ⚙️ Step 3: Jenkins Final Configuration
 
-The `Jenkinsfile` automates the following:
+### 1. Required Plugins
 
-1. **Checkout**: Pulls the application code and test suite.
-2. **Kaniko Build**: Builds the images and tags them (e.g., `titanic-auth:v1`).
-3. **K8s Deploy**: Applies `k8s/main.yml` and waits for the `gateway` to be ready.
-4. **Cypress Execution**: Runs the tests using `--env allure=true` to generate raw data.
-5. **Allure Reporting**:
-* Uses `Copy Artifact` to pull history from the previous build.
-* Generates a fresh HTML report with `npx allure-commandline`.
-* Publishes the report to the Jenkins UI via `htmlPublisher`.
+Install the following via *Manage Jenkins -> Plugins* to support the pipeline and custom reporting:
 
+* **Kubernetes**: Powers dynamic build agents.
+* **HTML Publisher**: Essential for viewing the Allure Report index.
+* **Copy Artifact**: Required to fetch history from previous builds for the reporting "Trend" chart.
 
+### 2. Secure Credentials for Cleanup
+
+To enable automated Docker Hub tag pruning:
+
+1. Go to *Manage Jenkins -> Credentials -> (global) -> Add Credentials*.
+2. **Kind**: Secret text.
+3. **Secret**: Your Docker Hub Personal Access Token (PAT).
+4. **ID**: `DOCKER_HUB_TOKEN`.
 
 ---
 
-Old version of README:
-# 🚢 Titanic Microservices: CI/CD Pipeline with Cypress & Allure
+## 🚢 Step 4: Run the Pipeline
 
-A production-ready automation project demonstrating the full lifecycle of a microservices application within a Kubernetes cluster. This project covers everything from container image building to automated API testing and persistent reporting.
+1. Create a new **Pipeline** job.
+2. In **Pipeline Definition**, choose **Pipeline script from SCM**.
+3. **Repository URL**: `https://github.com/rockuro709/cypress`.
+4. Click **Build Now**.
 
-## 🛠 Tech Stack
+---
 
-* **Application**: Python (FastAPI) microservices.
-* **CI/CD**: Jenkins Declarative Pipeline (Dynamic Kubernetes Agents).
-* **Containerization**: [Kaniko](https://github.com/GoogleContainerTools/kaniko) (Building Docker images inside K8s without root privileges).
-* **Orchestration**: Kubernetes (Deployments & Services).
-* **Testing**: Cypress (TypeScript) for E2E API Validation.
-* **Reporting**: Allure Report (Custom implementation with history and trends).
+## 📊 Custom Allure Reporting Workaround
 
-## 🚀 Pipeline Architecture
+Since the standard Allure plugin is bypassed, the pipeline uses a custom `post { always { ... } }` logic to generate reports manually:
 
-The pipeline is organized into several critical stages to ensure stability:
-1.  **Checkout SCM**: Clones the application and testing repositories.
-2.  **Build & Push (Kaniko)**: Builds 4 separate microservice images and pushes them to Docker Hub.
-3.  **Deploy to K8s**: Deploys the infrastructure using `kubectl apply`.
-4.  **Cypress Tests**: Runs tests in a dedicated container with **2Gi RAM** to prevent memory crashes.
-5.  **Post Actions (Allure Reporting)**: 
-    * Validates `allure-results` existence.
-    * Fetches history from previous builds using the `Copy Artifact` plugin.
-    * Generates a static HTML report using `npx allure-commandline`.
-    * Publishes the report via `htmlPublisher`.
+1. **allure-gen Container**: Runs inside a Java/Node environment (`timbru31/java-node`).
+2. **History Injection**: The `copyArtifacts` plugin pulls `allure-report/history/**` from the last completed build into the current workspace.
+3. **CLI Generation**: Runs `npx allure-commandline generate` to build a static HTML report.
+4. **Publication**: The `publishHTML` plugin renders the report directly in the Jenkins UI sidebar as **"📊 Allure Report"**.
 
-![Jenkins Pipeline View](path/to/image_216000.png)
-*Pipeline execution overview with 100% success rate.*
+---
 
-## 📊 Testing Insights
+## 🧹 Step 5: Storage Maintenance
 
-The Allure integration provides:
-* **Trend Analysis**: Visual tracking of test stability over time.
-* **Detailed Execution**: Step-by-step API request/response logs.
-* **History**: Persistent results across multiple builds.
+While the cloud registry is cleaned via API, local image layers may accumulate in Docker Desktop. To optimize local disk space, run:
 
-![Allure Dashboard](path/to/image_215ffb.png)
+```powershell
+docker image prune -a -f --filter "until=48h"
 
-## 🔧 Prerequisites
+```
 
-1.  **Kubernetes Secrets**: Create a `docker-credentials` secret with your Docker Hub auth.
-2.  **Jenkins Plugins**: Ensure `Kubernetes`, `HTML Publisher`, and `Copy Artifact` are installed.
-3.  **Memory**: Ensure your K8s node has at least 4GB of free RAM to support the Cypress browser.
+*This removes build artifacts older than 48 hours*.
+
+---
+
+## ☁️ Shared Private Cloud Model
+
+One of the primary advantages of this architecture is its **"Zero-Local-Setup"** requirement for other team members. This machine functions as a **self-hosted cloud provider**, allowing other testers to utilize the full power of the infrastructure without installing Docker, Kubernetes, or Helm on their own workstations.
+
+---
