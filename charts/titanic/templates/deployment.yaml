@@ -19,16 +19,4 @@ spec:
         image: {{ $.Values.image.repository }}/titanic-{{ $name }}:{{ $.Values.image.tag }}
         ports:
         - containerPort: {{ $config.containerPort }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ $name }}-service
-spec:
-  selector:
-    app: {{ $name }}
-  ports:
-  - protocol: TCP
-    port: {{ $config.port }}
-    targetPort: {{ $config.containerPort }}
 {{- end }}
