@@ -7,7 +7,7 @@ kind: Pod
 spec:
   containers:
   - name: cleanup-tool
-    image: badouralix/curl-jq:latest
+    image: curlimages/curl:latest
     command: ["sleep", "99d"]
   - name: kaniko-auth
     image: gcr.io/kaniko-project/executor:debug
@@ -115,7 +115,7 @@ spec:
 
         stage('Cleanup Docker Hub Tags') {
             when {
-                expression { currentBuild.currentResult == 'SUCCESS' }           
+                expression { currentBuild.currentResult == 'SUCCESS' }
             }
             steps {
                 container('cleanup-tool') {
@@ -124,13 +124,21 @@ spec:
                             def repos = ['titanic-auth', 'titanic-passenger', 'titanic-stats', 'titanic-gateway']
                             def username = 'antontratsevskii'
                             
-                            def loginResponse = sh(script: "curl -s -H 'Content-Type: application/json' -X POST -d '{\"username\": \"${username}\", \"password\": \"${PAT}\"}' https://hub.docker.com/v2/users/login/", returnStdout: true).trim()
-                            def jwt = sh(script: "echo '${loginResponse}' | jq -r .token", returnStdout: true).trim()
+                            def jwt = sh(
+                                script: 'curl -s -H "Content-Type: application/json" -X POST -d "{\\"username\\": \\"' + username + '\\", \\"password\\": \\"'$PAT'\\"}" https://hub.docker.com/v2/users/login/ | grep -oP \'"token":\\s*"\\K[^"]+\'',
+                                returnStdout: true
+                            ).trim()
+
+                            if (!jwt) {
+                                error "Failed to obtain JWT token from Docker Hub. Check credentials."
+                            }
 
                             repos.each { repoName ->
                                 echo "Processing repository: ${repoName}"
                                 sh """
-                                    TAGS=\$(curl -s -H "Authorization: JWT ${jwt}" "https://hub.docker.com/v2/repositories/${username}/${repoName}/tags/?page_size=100" | jq -r '.results | sort_by(.last_updated) | reverse | .[].name')
+                                    # Получаем список тегов (через API)
+                                    # Мы используем grep/sed вместо jq, если в этом контейнере нет jq
+                                    TAGS=\$(curl -s -H "Authorization: JWT ${jwt}" "https://hub.docker.com/v2/repositories/${username}/${repoName}/tags/?page_size=100" | grep -oP '"name":\\s*"\\K[^"]+')
                                     
                                     COUNT=0
                                     for TAG in \$TAGS; do
