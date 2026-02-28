@@ -115,7 +115,7 @@ spec:
 
         stage('Cleanup Docker Hub Tags') {
             when {
-                success() 
+                expression { currentBuild.currentResult == 'SUCCESS' }           
             }
             steps {
                 container('cleanup-tool') {
