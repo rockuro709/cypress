@@ -125,19 +125,21 @@ spec:
                             def username = 'antontratsevskii'
                             
                             def jwt = sh(
-                                script: 'curl -s -H "Content-Type: application/json" -X POST -d "{\\"username\\": \\"' + username + '\\", \\"password\\": \\"'$PAT'\\"}" https://hub.docker.com/v2/users/login/ | grep -oP \'"token":\\s*"\\K[^"]+\'',
+                                script: """
+                                    curl -s -H "Content-Type: application/json" -X POST \
+                                    -d '{"username": "${username}", "password": "'"\$PAT"'"}' \
+                                    https://hub.docker.com/v2/users/login/ | sed -e 's/.*"token":"\\([^"]*\\)".*/\\1/'
+                                """,
                                 returnStdout: true
                             ).trim()
 
-                            if (!jwt) {
-                                error "Failed to obtain JWT token from Docker Hub. Check credentials."
+                            if (!jwt || jwt.contains("login")) {
+                                error "Failed to obtain JWT token. Check if DOCKER_HUB_TOKEN is correct."
                             }
 
                             repos.each { repoName ->
                                 echo "Processing repository: ${repoName}"
                                 sh """
-                                    # Получаем список тегов (через API)
-                                    # Мы используем grep/sed вместо jq, если в этом контейнере нет jq
                                     TAGS=\$(curl -s -H "Authorization: JWT ${jwt}" "https://hub.docker.com/v2/repositories/${username}/${repoName}/tags/?page_size=100" | grep -oP '"name":\\s*"\\K[^"]+')
                                     
                                     COUNT=0
