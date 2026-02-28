@@ -6,9 +6,6 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - name: cleanup-tool
-    image: curlimages/curl:latest
-    command: ["sleep", "99d"]
   - name: kaniko-auth
     image: gcr.io/kaniko-project/executor:debug
     command: ["sleep", "99d"]
@@ -118,7 +115,7 @@ spec:
                 expression { currentBuild.currentResult == 'SUCCESS' }
             }
             steps {
-                container('cleanup-tool') {
+                container('kubectl') { 
                     withCredentials([string(credentialsId: 'DOCKER_HUB_TOKEN', variable: 'PAT')]) {
                         script {
                             def repos = ['titanic-auth', 'titanic-passenger', 'titanic-stats', 'titanic-gateway']
@@ -128,19 +125,19 @@ spec:
                                 script: """
                                     curl -s -H "Content-Type: application/json" -X POST \
                                     -d '{"username": "${username}", "password": "'"\$PAT"'"}' \
-                                    https://hub.docker.com/v2/users/login/ | sed -e 's/.*"token":"\\([^"]*\\)".*/\\1/'
+                                    https://hub.docker.com/v2/users/login/ | grep -o '"token":"[^"]*' | cut -d'"' -f4
                                 """,
                                 returnStdout: true
                             ).trim()
 
-                            if (!jwt || jwt.contains("login")) {
-                                error "Failed to obtain JWT token. Check if DOCKER_HUB_TOKEN is correct."
+                            if (!jwt || jwt.length() < 20) {
+                                error "Failed to obtain JWT token. Check credentials."
                             }
 
                             repos.each { repoName ->
                                 echo "Processing repository: ${repoName}"
                                 sh """
-                                    TAGS=\$(curl -s -H "Authorization: JWT ${jwt}" "https://hub.docker.com/v2/repositories/${username}/${repoName}/tags/?page_size=100" | grep -oP '"name":\\s*"\\K[^"]+')
+                                    TAGS=\$(curl -s -H "Authorization: JWT ${jwt}" "https://hub.docker.com/v2/repositories/${username}/${repoName}/tags/?page_size=100" | grep -o '"name":"[^"]*' | cut -d'"' -f4)
                                     
                                     COUNT=0
                                     for TAG in \$TAGS; do
