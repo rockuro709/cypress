@@ -1,19 +1,10 @@
-# 🎯 Project Roadmap & Improvements
+## 📝 Roadmap & TODO
 
-### Infrastructure & Orchestration
-- [ ] **Helm Integration**: Migrating from static YAML files to Helm Charts for better environment management.
-- [ ] **Namespaces**: Isolate test environments by deploying each build to a unique Kubernetes Namespace.
-* [ ] **Network Policies**: Implement K8s NetworkPolicies to secure service-to-service communication.
-
-### Build & Security
-- [ ] **Vulnerability Scanning**: Integrate **Trivy** to scan Docker images before pushing to the registry.
-- [ ] **Kaniko Caching**: Enable layer caching in Kaniko to reduce build times for Python dependencies.
-
-### Testing & Optimization
-- [ ] **Parallel Execution**: Split Cypress tests into multiple pods for faster execution.
-- [ ] **Notification System**: Add Slack or Telegram webhooks to notify the team of build failures.
-- [ ] **Smoke Suite**: Define a subset of critical tests to run before the full E2E suite.
-
-
-Divide all-in-one file api.cy.ts to separate files for each layer: test-data, POM, services etc.
-Add detailed comments?
+* [ ] **Setup Validation**: Perform a clean "from scratch" deployment on a fresh machine following the **Local Reproduction Guide** to ensure 100% reproducibility.
+* [ ] **Pipeline Optimization**: Audit the source code and test suites to identify and eliminate arbitrary `sleep` commands, replacing them with dynamic polling or proper synchronization logic.
+* [ ] **Collaborator Verification**: Validate the **Zero-Local-Setup** model by pushing test code from a secondary workstation and triggering the pipeline without installing local infrastructure.
+* [ ] **AI Integration**: Implement **Google Gemini API** integration to automatically analyze Allure reports and provide root-cause analysis for test failures.
+* [ ] **Test Suite Expansion**: Significantly increase E2E and integration test coverage to validate complex edge cases across all microservices.
+* [ ] **Test Architecture Refactoring**: Decouple the monolithic `api.cy.ts` into a layered architecture, implementing **Page Object Model (POM)**, dedicated **Service Layers**, and externalized **Test Data** management for better maintainability.
+* [ ] **Full-Stack Evolution**: Develop a modern **Frontend** for the Titanic application to transition it from a collection of APIs into a complete, user-facing web experience.
+* [ ] **Code Documentation (Optional)**: Conduct a comprehensive documentation pass, adding detailed comments to complex logic blocks within the pipeline and test framework.
