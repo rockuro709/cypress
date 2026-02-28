@@ -71,10 +71,6 @@ This project implements a fully automated, end-to-end workflow. Once a developer
 
 ---
 
-This guide provides a comprehensive walkthrough for deploying the **Titanic Microservices** automation ecosystem on your local workstation, reflecting the specific manual configuration and custom reporting logic used in this project.
-
----
-
 # 🚀 Local Reproduction Guide
 
 ## 📋 Prerequisites
