@@ -6,6 +6,9 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
+  - name: cleanup-tool
+    image: badouralix/curl-jq:latest
+    command: ["sleep", "99d"]
   - name: kaniko-auth
     image: gcr.io/kaniko-project/executor:debug
     command: ["sleep", "99d"]
@@ -106,6 +109,43 @@ spec:
                         npm install
                         CYPRESS_BASE_URL=http://gateway-service:8000 npx cypress run --browser electron --env allure=true --config video=false,screenshotOnRunFailure=false
                     '''
+                }
+            }
+        }
+
+        stage('Cleanup Docker Hub Tags') {
+            when {
+                success() 
+            }
+            steps {
+                container('cleanup-tool') {
+                    withCredentials([string(credentialsId: 'DOCKER_HUB_TOKEN', variable: 'PAT')]) {
+                        script {
+                            def repos = ['titanic-auth', 'titanic-passenger', 'titanic-stats', 'titanic-gateway']
+                            def username = 'antontratsevskii'
+                            
+                            def loginResponse = sh(script: "curl -s -H 'Content-Type: application/json' -X POST -d '{\"username\": \"${username}\", \"password\": \"${PAT}\"}' https://hub.docker.com/v2/users/login/", returnStdout: true).trim()
+                            def jwt = sh(script: "echo '${loginResponse}' | jq -r .token", returnStdout: true).trim()
+
+                            repos.each { repoName ->
+                                echo "Processing repository: ${repoName}"
+                                sh """
+                                    TAGS=\$(curl -s -H "Authorization: JWT ${jwt}" "https://hub.docker.com/v2/repositories/${username}/${repoName}/tags/?page_size=100" | jq -r '.results | sort_by(.last_updated) | reverse | .[].name')
+                                    
+                                    COUNT=0
+                                    for TAG in \$TAGS; do
+                                        COUNT=\$((COUNT+1))
+                                        if [ \$COUNT -le 10 ]; then
+                                            echo "Keeping tag: \$TAG"
+                                        else
+                                            echo "Deleting old tag: \$TAG"
+                                            curl -s -X DELETE -H "Authorization: JWT ${jwt}" "https://hub.docker.com/v2/repositories/${username}/${repoName}/tags/\$TAG/"
+                                        fi
+                                    done
+                                """
+                            }
+                        }
+                    }
                 }
             }
         }
