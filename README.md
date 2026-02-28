@@ -10,7 +10,7 @@ The core mission is to transition from traditional "localhost" testing to a **Cl
 
 * **Infrastructure as Code (IaC)**: We replace manual setup with automated Helm templates that manage 4 separate microservices simultaneously.
 * **DevOps Synergy**: The pipeline doesn't just run tests; it builds production-ready images using **Kaniko** and manages the full application lifecycle.
-* **Resource Reliability**: By running within Kubernetes, we can strictly define environment needs - such as granting the Cypress runner **2Gi of RAM**—ensuring that tests remain stable and immune to local machine resource fluctuations.
+* **Resource Reliability**: By running within Kubernetes, we can strictly define environment needs - such as granting the Cypress runner **2Gi of RAM** - ensuring that tests remain stable and immune to local machine resource fluctuations.
 * **Cloud Portability**: While this project can be run on a local machine (via Docker Desktop), its architecture is strictly **cloud-agnostic**. By simply changing the context to a remote VPS or a managed cloud provider (like AWS EKS or Google GKE), the entire ecosystem migrates seamlessly without changing a single line of code.
 
 ---
@@ -20,7 +20,7 @@ The core mission is to transition from traditional "localhost" testing to a **Cl
 #### 1. Application Layer (The "Titanic" App)
 
 * **Language**: Python.
-* **Framework**: FastAPI (used for all 4 microservices).
+* **Framework**: FastAPI.
 * **Architecture**: Microservices (Auth, Passenger, Statistics, API Gateway).
 * **App Repository**: [pavel-kazlou-innowise/titanic](https://github.com/pavel-kazlou-innowise/titanic) (The target for our CI/CD pipeline).
 
@@ -28,8 +28,7 @@ The core mission is to transition from traditional "localhost" testing to a **Cl
 
 * **Orchestrator**: **Kubernetes (K8s)** - manages the lifecycle of the services and test agents.
 * **Local Cluster**: **Docker Desktop** (with K8s enabled) - the environment where the project is developed and verified.
-* **Package Manager**: **Helm (v3)** - used to template K8s manifests and manage deployments as a single unit.
-* **Infrastructure as Code (IaC)**: YAML templates and Helm Charts.
+* **Infrastructure as Code (IaC)**: **Helm v3** is used to template Kubernetes manifests and manage the entire microservices stack as a single, versioned deployment unit.
 
 #### 3. CI/CD Pipeline (The Automation Engine)
 
@@ -40,13 +39,13 @@ The core mission is to transition from traditional "localhost" testing to a **Cl
 
 #### 4. Automated Testing Framework
 
-* **Framework**: **Cypress** - used for end-to-end (E2E) API validation.
-* **Language**: **TypeScript (TS)** - used for writing robust test scripts.
+* **Framework**: **Cypress**.
+* **Language**: **TypeScript (TS)**.
 * **Environment**: **Node.js** (runtime) and **npm** (package management).
 
 #### 5. Quality Assurance & Reporting
 
-* **Reporting Engine**: **Allure Report 2** - creates high-level visual dashboards for test results.
+* **Reporting Engine**: **Allure Report 2**.
 * **History Tracking**: **Copy Artifact Plugin** - allows Allure to display trends and historical data across multiple builds.
 * **Reporting Tooling**: `allure-commandline` (via `npx`).
 
@@ -54,7 +53,6 @@ The core mission is to transition from traditional "localhost" testing to a **Cl
 
 * **`kubectl`**: Kubernetes command-line tool.
 * **`helm`**: Helm CLI for managing charts.
-* **PowerShell**: Used for local management and **port-forwarding** to access Jenkins inside the cluster.
 * **Git**: Version control for both the app and the test infrastructure.
 
 ---
