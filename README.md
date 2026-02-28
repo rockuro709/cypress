@@ -193,6 +193,6 @@ docker image prune -a -f --filter "until=48h"
 
 ## ☁️ Shared Private Cloud Model
 
-One of the primary advantages of this architecture is its **"Zero-Local-Setup"** requirement for other team members. This machine functions as a **self-hosted cloud provider**, allowing other testers to utilize the full power of the infrastructure without installing Docker, Kubernetes, or Helm on their own workstations.
+One of the primary advantages of this architecture is its **"Zero-Local-Setup"** requirement for other team members. This machine functions as a **self-hosted cloud provider**, allowing other QA engineers to utilize the full power of the infrastructure without installing Docker, Kubernetes, or Helm on their own workstations.
 
 ---
