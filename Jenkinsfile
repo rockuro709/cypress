@@ -31,7 +31,7 @@ spec:
     - name: docker-config
       mountPath: /kaniko/.docker/
   - name: kubectl
-    image: roffe/kubectl:latest
+    image: dtzar/helm-kubectl:latest
     command: ["sleep", "99d"]
   - name: cypress
     image: cypress/included:13.6.0
@@ -158,9 +158,6 @@ spec:
             container('kubectl') {
                 echo 'Cleaning up environment via Helm...'
                 sh 'helm uninstall titanic-release --namespace jenkins || true'
-                
-                echo 'Pruning dangling docker images...'
-                sh 'docker image prune -f || true'
             }
         }
     }
