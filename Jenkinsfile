@@ -72,26 +72,29 @@ spec:
         stage('Build and Push Images (Kaniko)') {
             steps {
                 container('kaniko-auth') {
-                    sh '/kaniko/executor --context `pwd`/app-source/auth_service --dockerfile `pwd`/app-source/auth_service/Dockerfile --destination antontratsevskii/titanic-auth:v1'
+                    sh "/kaniko/executor --context `pwd`/app-source/auth_service --dockerfile `pwd`/app-source/auth_service/Dockerfile --destination antontratsevskii/titanic-auth:${env.BUILD_NUMBER}"
                 }
                 container('kaniko-passenger') {
-                    sh '/kaniko/executor --context `pwd`/app-source/passenger_service --dockerfile `pwd`/app-source/passenger_service/Dockerfile --destination antontratsevskii/titanic-passenger:v1'
+                    sh "/kaniko/executor --context `pwd`/app-source/passenger_service --dockerfile `pwd`/app-source/passenger_service/Dockerfile --destination antontratsevskii/titanic-passenger:${env.BUILD_NUMBER}"
                 }
                 container('kaniko-stats') {
-                    sh '/kaniko/executor --context `pwd`/app-source/statistics_service --dockerfile `pwd`/app-source/statistics_service/Dockerfile --destination antontratsevskii/titanic-stats:v1'
+                    sh "/kaniko/executor --context `pwd`/app-source/statistics_service --dockerfile `pwd`/app-source/statistics_service/Dockerfile --destination antontratsevskii/titanic-stats:${env.BUILD_NUMBER}"
                 }
                 container('kaniko-gateway') {
-                    sh '/kaniko/executor --context `pwd`/app-source/api_gateway --dockerfile `pwd`/app-source/api_gateway/Dockerfile --destination antontratsevskii/titanic-gateway:v1'
+                    sh "/kaniko/executor --context `pwd`/app-source/api_gateway --dockerfile `pwd`/app-source/api_gateway/Dockerfile --destination antontratsevskii/titanic-gateway:${env.BUILD_NUMBER}"
                 }
             }
         }
         
-        stage('Deploy to Kubernetes') {
+        stage('Deploy to Kubernetes (Helm)') {
             steps {
                 container('kubectl') {
-                    sh 'kubectl apply -f k8s/main.yml'
-                    echo 'Waiting for gateway...'
-                    sh 'kubectl rollout status deployment/gateway-deployment'
+                    sh """
+                        helm upgrade --install titanic-release ./charts/titanic \
+                        --namespace jenkins \
+                        --set image.tag=${env.BUILD_NUMBER} \
+                        --wait
+                    """
                 }
             }
         }
@@ -153,8 +156,11 @@ spec:
             ])
             
             container('kubectl') {
-                echo 'Cleaning up Kubernetes resources...'
-                sh 'kubectl delete -f k8s/main.yml --ignore-not-found=true'
+                echo 'Cleaning up environment via Helm...'
+                sh 'helm uninstall titanic-release --namespace jenkins || true'
+                
+                echo 'Pruning dangling docker images...'
+                sh 'docker image prune -f || true'
             }
         }
     }

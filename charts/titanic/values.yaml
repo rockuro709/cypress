@@ -1,0 +1,18 @@
+image:
+  repository: antontratsevskii
+  tag: latest  
+  pullPolicy: Always
+
+services:
+  auth:
+    port: 8003
+    containerPort: 8003
+  passenger:
+    port: 8001
+    containerPort: 8001
+  stats:
+    port: 8002
+    containerPort: 8002
+  gateway:
+    port: 8000
+    containerPort: 8000

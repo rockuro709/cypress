@@ -1,0 +1,34 @@
+{{- range $name, $config := .Values.services }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+    spec:
+      containers:
+      - name: {{ $name }}
+        image: {{ $.Values.image.repository }}/titanic-{{ $name }}:{{ $.Values.image.tag }}
+        ports:
+        - containerPort: {{ $config.containerPort }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}-service
+spec:
+  selector:
+    app: {{ $name }}
+  ports:
+  - protocol: TCP
+    port: {{ $config.port }}
+    targetPort: {{ $config.containerPort }}
+{{- end }}
