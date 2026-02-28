@@ -1,30 +1,59 @@
-# 🚢 Titanic Microservices: Professional CI/CD with Kubernetes & Cypress
+# 🚢 Titanic Microservices: Cloud-Native E2E Orchestration
 
-## 📖 Overview
+## 📖 Project Overview
 
-This project is a comprehensive automation showcase for a microservices-based application. It demonstrates a complete DevOps lifecycle: from code commit to cloud-native deployment and automated quality assurance.
+This project serves as an advanced **Engineering Sandbox** designed to explore and master the synergy between modern E2E testing frameworks, automated CI/CD pipelines, and cloud-native orchestration.
 
-### Why this project exists?
+The core mission is to transition from traditional "localhost" testing to a **Cloud-First approach**. In this environment, a microservices-based application is fully containerized, dynamically deployed via Helm, and validated through automated scripts - all running within a Kubernetes cluster.
 
-In modern software engineering, running microservices "just locally" (e.g., via `python main.py` or basic `docker-compose`) is insufficient for production-scale systems.
+### Why this architecture?
 
-**This project utilizes Kubernetes (K8s) because:**
-
-* **Service Discovery**: Services communicate via internal DNS names (e.g., `http://gateway:8000`) rather than brittle localhost ports.
-* **Isolation**: Each part of the pipeline (building, deploying, testing) runs in its own isolated container environment.
-* **Resource Management**: We explicitly manage memory (e.g., granting the Cypress pod **2Gi RAM**) to ensure heavy browser-based tests don't crash under load.
-* **Parity**: By using K8s locally, we ensure that if it works on the developer's machine, it will work in the production cloud (AWS, GCP, Azure).
+* **Infrastructure as Code (IaC)**: We replace manual setup with automated Helm templates that manage 4 separate microservices simultaneously.
+* **DevOps Synergy**: The pipeline doesn't just run tests; it builds production-ready images using **Kaniko** and manages the full application lifecycle.
+* **Resource Reliability**: By running within Kubernetes, we can strictly define environment needs - such as granting the Cypress runner **2Gi of RAM** - ensuring that tests remain stable and immune to local machine resource fluctuations.
+* **Cloud Portability**: While this project can be run on a local machine (via Docker Desktop), its architecture is strictly **cloud-agnostic**. By simply changing the context to a remote VPS or a managed cloud provider (like AWS EKS or Google GKE), the entire ecosystem migrates seamlessly without changing a single line of code.
 
 ---
 
-## 🛠 Tech Stack
+### 🛠 Full Technology Stack Reference
 
-* **Microservices**: 4 Python (FastAPI) services (Auth, Passenger, Stats, API Gateway).
-* **Orchestration**: Kubernetes.
-* **CI/CD**: Jenkins Declarative Pipeline.
-* **Security-First Building**: [Kaniko](https://github.com/GoogleContainerTools/kaniko) for building Docker images inside K8s without needing a dangerous Docker socket.
-* **End-to-End Testing**: Cypress (TypeScript).
-* **Advanced Reporting**: Allure Report with persistent history and trend tracking.
+#### 1. Application Layer (The "Titanic" App)
+
+* **Language**: Python.
+* **Framework**: FastAPI.
+* **Architecture**: Microservices (Auth, Passenger, Statistics, API Gateway).
+* **App Repository**: [pavel-kazlou-innowise/titanic](https://github.com/pavel-kazlou-innowise/titanic) (The target for our CI/CD pipeline).
+
+#### 2. Infrastructure & Orchestration
+
+* **Orchestrator**: **Kubernetes (K8s)** - manages the lifecycle of the services and test agents.
+* **Local Cluster**: **Docker Desktop** (with K8s enabled) - the environment where the project is developed and verified.
+* **Infrastructure as Code (IaC)**: **Helm v3** is used to template Kubernetes manifests and manage the entire microservices stack as a single, versioned deployment unit.
+
+#### 3. CI/CD Pipeline (The Automation Engine)
+
+* **CI/CD Tool**: **Jenkins** (Declarative Pipeline).
+* **Build Tool**: **Kaniko** - securely builds and pushes Docker images to Docker Hub directly from the K8s cluster.
+* **Agent Management**: **Kubernetes Plugin** for Jenkins - dynamically spins up pods to execute build stages.
+* **Image Registry**: **Docker Hub** - stores built microservice images (e.g., `titanic-auth:51`).
+
+#### 4. Automated Testing Framework
+
+* **Framework**: **Cypress**.
+* **Language**: **TypeScript (TS)**.
+* **Environment**: **Node.js** (runtime) and **npm** (package management).
+
+#### 5. Quality Assurance & Reporting
+
+* **Reporting Engine**: **Allure Report 2**.
+* **History Tracking**: **Copy Artifact Plugin** - allows Allure to display trends and historical data across multiple builds.
+* **Reporting Tooling**: `allure-commandline` (via `npx`).
+
+#### 6. Essential Tools & CLI
+
+* **`kubectl`**: Kubernetes command-line tool.
+* **`helm`**: Helm CLI for managing charts.
+* **Git**: Version control for both the app and the test infrastructure.
 
 ---
 
