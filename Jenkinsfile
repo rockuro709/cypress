@@ -119,16 +119,21 @@ spec:
                 container('cypress') {
                     withCredentials([string(credentialsId: 'GOOGLE_API_KEY', variable: 'GOOGLE_API_KEY')]) {
                         sh '''
-                            npm install -g tsx
+                            npm install -g tsx marked
                             npm install @google/generative-ai
                             
                             npx tsx ai-analysis.ts
                             
                             if ls allure-results/ai-analysis/*.md 1> /dev/null 2>&1; then
-                                echo "Конвертируем Markdown в HTML..."
-                                npx marked allure-results/ai-analysis/*.md > allure-results/ai-analysis/index.html
+                                echo "Converting Markdown to HTML..."
+                                
+                                echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>AI Report</title></head><body style="font-family: sans-serif; padding: 20px; line-height: 1.6;">' > allure-results/ai-analysis/index.html
+                                
+                                marked allure-results/ai-analysis/*.md >> allure-results/ai-analysis/index.html
+                                
+                                echo '</body></html>' >> allure-results/ai-analysis/index.html
                             else
-                                echo "Упавших тестов нет, ИИ-отчет не создавался."
+                                echo "No failed tests found, AI report was not created."
                             fi
                         '''
                     }
@@ -197,7 +202,7 @@ spec:
                             projectName: env.JOB_NAME,     
                             selector: lastCompleted(),    
                             filter: 'allure-report/history/**', 
-                            optional: true                 
+                            optional: true                
                         )
                         
                         sh '''
@@ -230,7 +235,7 @@ spec:
             ])
 
             publishHTML(target: [
-                allowMissing: true, // Обязательно true! Если тесты прошли успешно, отчета не будет, и сборка не должна из-за этого падать
+                allowMissing: true, 
                 alwaysLinkToLastBuild: true,
                 keepAll: true,
                 reportDir: 'allure-results/ai-analysis',
