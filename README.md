@@ -12,6 +12,7 @@ The core mission is to transition from traditional "localhost" testing to a **Cl
 * **DevOps Synergy**: The pipeline doesn't just run tests; it builds production-ready images using **Kaniko** and manages the full application lifecycle.
 * **Resource Reliability**: By running within Kubernetes, we can strictly define environment needs - such as granting the Cypress runner **2Gi of RAM** - ensuring that tests remain stable and immune to local machine resource fluctuations.
 * **Cloud Portability**: While this project can be run on a local machine (via Docker Desktop), its architecture is strictly **cloud-agnostic**. By simply changing the context to a remote VPS or a managed cloud provider (like AWS EKS or Google GKE), the entire ecosystem migrates seamlessly without changing a single line of code.
+* * **AI-Powered Debugging**: The pipeline is enhanced with an automated AI assistant. Instead of manually parsing raw stack traces, a custom Node.js script integrates with the **Gemini 2.5 Flash API** to instantly analyze failing tests, identify root causes based on test source code, and generate a human-readable HTML/Markdown report right within the Jenkins UI.
 
 ---
 
@@ -23,9 +24,10 @@ This project implements a fully automated, end-to-end workflow. Once a developer
 2. **Containerization (Kaniko)**: Jenkins initiates the **Build and Push** stage. Using **Kaniko**, the system builds Docker images for all four microservices (Auth, Passenger, Stats, Gateway) directly within the Kubernetes cluster and pushes them to **Docker Hub** with unique build-specific tags.
 3. **Cloud-Native Orchestration (Helm)**: The **Deploy** stage uses **Helm v3** to template Kubernetes manifests. It dynamically injects the new image tags and deploys the entire application stack into a dedicated namespace, ensuring proper **Service Discovery** via internal DNS (e.g., `http://gateway-service:8000`).
 4. **Automated Validation (Cypress)**: Once the environment is ready, a specialized **Cypress pod** is launched to run the E2E API test suites against the deployed services.
-5. **Analytics & Reporting (Allure)**: After test execution, the **allure-gen** container processes the results, fetches historical data from previous runs, and generates a comprehensive **Allure Report** with trend visualizations.
-6. **Environment Decommissioning**: To maintain a "Zero-Waste" infrastructure, the `post-build` stage executes a **Helm uninstall**, completely removing the application pods and services from the cluster.
-7. **Registry Pruning**: Finally, the pipeline connects to the **Docker Hub API** to delete obsolete image tags, keeping only the 8 most recent versions to optimize cloud storage and maintain registry hygiene.
+6. **Analytics & Reporting (Allure)**: After test execution, the **allure-gen** container processes the results, fetches historical data from previous runs, and generates a comprehensive **Allure Report** with trend visualizations.
+7. **AI Error Analysis (Gemini Integration)**: If any test fails, the pipeline automatically triggers a custom TypeScript module (`ai-analysis.ts`). It parses the `allure-results` folder, extracts the stack trace and the exact test code context, and sends a highly structured prompt to the **Google Gemini** model. The AI's root cause analysis is compiled into a standalone, styled HTML report and attached back to the Allure artifacts.
+8. **Environment Decommissioning**: To maintain a "Zero-Waste" infrastructure, the `post-build` stage executes a **Helm uninstall**, completely removing the application pods and services from the cluster.
+9. **Registry Pruning**: Finally, the pipeline connects to the **Docker Hub API** to delete obsolete image tags, keeping only the 8 most recent versions to optimize cloud storage and maintain registry hygiene.
 
 ---
 
@@ -63,7 +65,12 @@ This project implements a fully automated, end-to-end workflow. Once a developer
 * **History Tracking**: **Copy Artifact Plugin** - allows Allure to display trends and historical data across multiple builds.
 * **Reporting Tooling**: `allure-commandline` (via `npx`).
 
-#### 6. Essential Tools & CLI
+#### 6. AI-Powered Analysis (Custom Solution)
+
+* **AI Model**: **Google Gemini 2.5 Flash** (via `@google/generative-ai` SDK).
+* **HTML Generation**: `marked` and `marked-highlight` (with `highlight.js` for syntax highlighting) to render AI responses natively within Jenkins CSP policies.
+
+#### 7. Essential Tools & CLI
 
 * **`kubectl`**: Kubernetes command-line tool.
 * **`helm`**: Helm CLI for managing charts.
@@ -147,14 +154,19 @@ Install the following via *Manage Jenkins -> Plugins* to support the pipeline an
 * **HTML Publisher**: Essential for viewing the Allure Report index.
 * **Copy Artifact**: Required to fetch history from previous builds for the reporting "Trend" chart.
 
-### 2. Secure Credentials for Cleanup
+### 2. Secure Credentials for Cleanup and AI-analysis
 
-To enable automated Docker Hub tag pruning:
+To enable automated Docker Hub tag pruning and the AI Debugging script, add the following credentials:
 
 1. Go to *Manage Jenkins -> Credentials -> (global) -> Add Credentials*.
-2. **Kind**: Secret text.
-3. **Secret**: Your Docker Hub Personal Access Token (PAT).
-4. **ID**: `DOCKER_HUB_TOKEN`.
+2. **Docker Hub Token**:
+   * **Kind**: Secret text.
+   * **Secret**: Your Docker Hub Personal Access Token (PAT).
+   * **ID**: `DOCKER_HUB_TOKEN`.
+3. **Google AI Token**:
+   * **Kind**: Secret text.
+   * **Secret**: Your Google AI Studio API Key.
+   * **ID**: `GOOGLE_API_KEY`.
 
 ---
 
@@ -175,6 +187,13 @@ Since the standard Allure plugin is bypassed, the pipeline uses a custom `post {
 2. **History Injection**: The `copyArtifacts` plugin pulls `allure-report/history/**` from the last completed build into the current workspace.
 3. **CLI Generation**: Runs `npx allure-commandline generate` to build a static HTML report.
 4. **Publication**: The `publishHTML` plugin renders the report directly in the Jenkins UI sidebar as **"📊 Allure Report"**.
+
+---
+
+## 🤖 AI Debug Analysis Report
+
+When tests fail, Jenkins also triggers the `HTML Publisher` to display an independent **"🤖 AI Report"** in the sidebar. 
+This custom page leverages inline CSS and `highlight.js` to bypass Jenkins' strict Content Security Policy (CSP), providing developers with a beautifully formatted, color-coded root cause analysis straight from Gemini—drastically reducing manual debugging time.
 
 ---
 
