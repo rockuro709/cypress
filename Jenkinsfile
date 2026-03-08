@@ -118,23 +118,8 @@ spec:
             steps {
                 container('cypress') {
                     withCredentials([string(credentialsId: 'GOOGLE_API_KEY', variable: 'GOOGLE_API_KEY')]) {
-                        sh '''
-                            npm install -g tsx marked
-                            npm install @google/generative-ai
-                            
+                        sh '''                            
                             npx tsx ai-analysis.ts
-                            
-                            if ls allure-results/ai-analysis/*.md 1> /dev/null 2>&1; then
-                                echo "Converting Markdown to HTML..."
-                                
-                                echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>AI Report</title></head><body style="font-family: sans-serif; padding: 20px; line-height: 1.6;">' > allure-results/ai-analysis/index.html
-                                
-                                marked allure-results/ai-analysis/*.md >> allure-results/ai-analysis/index.html
-                                
-                                echo '</body></html>' >> allure-results/ai-analysis/index.html
-                            else
-                                echo "No failed tests found, AI report was not created."
-                            fi
                         '''
                     }
                 }

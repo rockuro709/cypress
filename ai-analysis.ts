@@ -2,6 +2,9 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Marked } from 'marked';
+import { markedHighlight } from 'marked-highlight';
+import hljs from 'highlight.js';
 
 dotenv.config();
 
@@ -19,6 +22,16 @@ const AI_ANALYSIS_DIR = path.join(ALLURE_RESULTS_DIR, 'ai-analysis');
 if (!fs.existsSync(AI_ANALYSIS_DIR)) {
     fs.mkdirSync(AI_ANALYSIS_DIR, { recursive: true });
 }
+
+const marked = new Marked(
+    markedHighlight({
+        langPrefix: 'hljs language-',
+        highlight(code, lang) {
+            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+            return hljs.highlight(code, { language }).value;
+        }
+    })
+);
 
 function extractCodeContext(trace: string): string {
     if (!trace) return 'Code context is unavailable';
@@ -53,6 +66,25 @@ const now = new Date();
 const timestamp = now.toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
 const mdFileName = `ai-report-${timestamp}.md`;
 const mdFilePath = path.join(AI_ANALYSIS_DIR, mdFileName);
+const htmlFilePath = path.join(AI_ANALYSIS_DIR, 'index.html'); // Путь для HTML-отчета
+
+const reportCSS = `
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.6; color: #24292f; background-color: #ffffff; padding: 30px; max-width: 1012px; margin: 0 auto; }
+    h1, h2, h3 { border-bottom: 1px solid #d0d7de; padding-bottom: .3em; margin-top: 24px; margin-bottom: 16px; }
+    h1 { font-size: 2em; } h2 { font-size: 1.5em; color: #cf222e; } /* Красные заголовки для упавших тестов */
+    a { color: #0969da; text-decoration: none; }
+    code { font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; font-size: 85%; background-color: rgba(175, 184, 193, 0.2); padding: 0.2em 0.4em; border-radius: 6px; }
+    pre { background-color: #f6f8fa; border-radius: 6px; padding: 16px; overflow: auto; }
+    pre code { background-color: transparent; padding: 0; }
+    blockquote { padding: 0 1em; color: #57606a; border-left: .25em solid #d0d7de; margin: 0; }
+    hr { height: .25em; padding: 0; margin: 24px 0; background-color: #d0d7de; border: 0; }
+    table { border-spacing: 0; border-collapse: collapse; width: 100%; margin-top: 0; margin-bottom: 16px; }
+    table th, table td { padding: 6px 13px; border: 1px solid #d0d7de; }
+    table tr:nth-child(2n) { background-color: #f6f8fa; }
+    
+    /* Стили для highlight.js (github-theme) */
+    .hljs{color:#24292e;background:#ffffff}.hljs-doctag,.hljs-keyword,.hljs-meta .hljs-keyword,.hljs-template-tag,.hljs-template-variable,.hljs-type,.hljs-variable.language_{color:#d73a49}.hljs-title,.hljs-title.class_,.hljs-title.class_.inherited__,.hljs-title.function_{color:#6f42c1}.hljs-attr,.hljs-attribute,.hljs-literal,.hljs-meta,.hljs-number,.hljs-operator,.hljs-variable,.hljs-selector-attr,.hljs-selector-class,.hljs-selector-id{color:#005cc5}.hljs-regexp,.hljs-string,.hljs-meta .hljs-string{color:#032f62}.hljs-built_in,.hljs-symbol{color:#e36209}.hljs-comment,.hljs-code,.hljs-formula{color:#6a737d}.hljs-name,.hljs-quote,.hljs-selector-tag,.hljs-selector-pseudo{color:#22863a}.hljs-subst{color:#24292e}.hljs-section{color:#005cc5;font-weight:bold}.hljs-bullet{color:#735c0f}.hljs-emphasis{color:#24292e;font-style:italic}.hljs-strong{color:#24292e;font-weight:bold}.hljs-addition{color:#22863a;background-color:#f0fff4}.hljs-deletion{color:#b31d28;background-color:#ffeef0}
+`;
 
 async function analyzeFailedTests() {
     console.log('Starting allure-results analysis...');
@@ -81,12 +113,17 @@ async function analyzeFailedTests() {
             const codeContext = extractCodeContext(errorTrace);
 
             const prompt = `
-            You are an experienced Senior QA Engineer specializing in Cypress and TypeScript. Your task is to analyze the failed test and provide a clear explanation of the root cause.
-            Please respond entirely in English. Base your analysis strictly on the provided source code snippet.
+            You are an expert Senior QA Automation Engineer. Analyze this failed Cypress test and provide a crystal-clear root cause analysis and a solution.
+            
+            **Formatting Rules:**
+            - Respond ENTIRELY in English.
+            - Use Markdown extensively (headings, bullet points, bold text).
+            - Use emojis (e.g., 💡, 🔍, 🛠️, ❌) to make the text visually appealing and scannable.
+            - Format any code examples using \`\`\`typescript blocks.
+            - Provide a brief "Summary" blockquote at the beginning.
             
             Test Name: ${testData.name}
             Error: ${errorMessage}
-            Stack Trace: ${errorTrace}
             
             Test Code Context:
             ${codeContext}
@@ -97,6 +134,7 @@ async function analyzeFailedTests() {
                 const aiResponse = result.response.text();
 
                 fullReportContent += `## ❌ Test: ${testData.name}\n\n`;
+                fullReportContent += `**Error:** \`${errorMessage}\`\n\n`;
                 fullReportContent += `${aiResponse}\n\n`;
                 fullReportContent += `---\n\n`; 
                 
@@ -118,14 +156,30 @@ async function analyzeFailedTests() {
 
             } catch (error: any) {
                 console.error(`❌ Error fetching Gemini response for test ${testData.name}:`, error.message);
-                fullReportContent += `## ❌ Test: ${testData.name}\n\n**Analysis Error:** Failed to get a response from AI (${error.message})\n\n---\n\n`;
+                fullReportContent += `## ❌ Test: ${testData.name}\n\n> ⚠️ **Analysis Error:** Failed to get a response from AI (${error.message})\n\n---\n\n`;
             }
         }
     }
 
     if (hasFailedTests) {
         fs.writeFileSync(mdFilePath, fullReportContent);
-        console.log(`\n🎉 General AI report successfully saved to: ${mdFilePath}`);
+        
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>AI Test Analysis Report</title>
+            <style>${reportCSS}</style>
+        </head>
+        <body>
+            ${marked.parse(fullReportContent)}
+        </body>
+        </html>`;
+        
+        fs.writeFileSync(htmlFilePath, htmlContent);
+        console.log(`\n🎉 General AI report successfully saved as Markdown and HTML!`);
     } else {
         console.log('No failed tests found. Report was not created.');
     }
