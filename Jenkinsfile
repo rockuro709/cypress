@@ -119,14 +119,17 @@ spec:
                 container('cypress') {
                     withCredentials([string(credentialsId: 'GOOGLE_API_KEY', variable: 'GOOGLE_API_KEY')]) {
                         sh '''
-                            # Устанавливаем tsx глобально или локально (если его нет в package.json)
                             npm install -g tsx
-                            
-                            # Убедимся, что пакет Google AI установлен (на случай если его нет в зависимостях)
                             npm install @google/generative-ai
                             
-                            # Запускаем наш скрипт
                             npx tsx ai-analysis.ts
+                            
+                            if ls allure-results/ai-analysis/*.md 1> /dev/null 2>&1; then
+                                echo "Конвертируем Markdown в HTML..."
+                                npx marked allure-results/ai-analysis/*.md > allure-results/ai-analysis/index.html
+                            else
+                                echo "Упавших тестов нет, ИИ-отчет не создавался."
+                            fi
                         '''
                     }
                 }
@@ -224,6 +227,15 @@ spec:
                 reportDir: 'allure-report',
                 reportFiles: 'index.html',
                 reportName: '📊 Allure Report'
+            ])
+
+            publishHTML(target: [
+                allowMissing: true, // Обязательно true! Если тесты прошли успешно, отчета не будет, и сборка не должна из-за этого падать
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'allure-results/ai-analysis',
+                reportFiles: 'index.html',
+                reportName: '🤖 AI Report'
             ])
             
             container('kubectl') {
