@@ -12,7 +12,7 @@ The core mission is to transition from traditional "localhost" testing to a **Cl
 * **DevOps Synergy**: The pipeline doesn't just run tests; it builds production-ready images using **Kaniko** and manages the full application lifecycle.
 * **Resource Reliability**: By running within Kubernetes, we can strictly define environment needs - such as granting the Cypress runner **2Gi of RAM** - ensuring that tests remain stable and immune to local machine resource fluctuations.
 * **Cloud Portability**: While this project can be run on a local machine (via Docker Desktop), its architecture is strictly **cloud-agnostic**. By simply changing the context to a remote VPS or a managed cloud provider (like AWS EKS or Google GKE), the entire ecosystem migrates seamlessly without changing a single line of code.
-* * **AI-Powered Debugging**: The pipeline is enhanced with an automated AI assistant. Instead of manually parsing raw stack traces, a custom Node.js script integrates with the **Gemini 2.5 Flash API** to instantly analyze failing tests, identify root causes based on test source code, and generate a human-readable HTML/Markdown report right within the Jenkins UI.
+* **AI-Powered Debugging**: The pipeline is enhanced with an automated AI assistant. Instead of manually parsing raw stack traces, a custom Node.js script integrates with the **Gemini 2.5 Flash API** to instantly analyze failing tests, identify root causes based on test source code, and generate a human-readable HTML/Markdown report right within the Jenkins UI.
 
 ---
 
