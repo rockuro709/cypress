@@ -2,8 +2,6 @@ const { defineConfig } = require("cypress");
 const { allureCypress } = require("allure-cypress/reporter");
 
 module.exports = defineConfig({
-  allowCypressEnv: false,
-
   e2e: {
     baseUrl: "http://localhost:8000",
     setupNodeEvents(on, config) {
@@ -12,9 +10,10 @@ module.exports = defineConfig({
       });
 
       on("before:browser:launch", (browser = {}, launchOptions) => {
-        if (browser.family === "chromium") {
+        if (browser.family === "chromium" && browser.name !== "electron") {
           launchOptions.args.push("--no-sandbox");
           launchOptions.args.push("--disable-dev-shm-usage");
+          launchOptions.args.push("--disable-gpu");
         }
 
         if (browser.name === "electron") {
