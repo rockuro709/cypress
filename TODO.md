@@ -8,3 +8,4 @@
 * [ ] **Test Architecture Refactoring**: Decouple the monolithic `api.cy.ts` into a layered architecture, implementing **Page Object Model (POM)**, dedicated **Service Layers**, and externalized **Test Data** management for better maintainability.
 * [ ] **Full-Stack Evolution**: Develop a modern **Frontend** for the Titanic application to transition it from a collection of APIs into a complete, user-facing web experience.
 * [ ] **Code Documentation (Optional)**: Conduct a comprehensive documentation pass, adding detailed comments to complex logic blocks within the pipeline and test framework.
+* [ ] **Database?**
