@@ -117,7 +117,7 @@ spec:
         stage('AI Error Analysis') {
             steps {
                 container('cypress') {
-                    withCredentials([string(credentialsId: 'GEMINI_API_KEY', variable: 'GOOGLE_API_KEY')]) {
+                    withCredentials([string(credentialsId: 'GOOGLE_API_KEY', variable: 'GOOGLE_API_KEY')]) {
                         sh '''
                             # Устанавливаем tsx глобально или локально (если его нет в package.json)
                             npm install -g tsx
