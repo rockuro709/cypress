@@ -102,10 +102,33 @@ spec:
         stage('Run Cypress Tests') {
             steps {
                 container('cypress') {
-                    sh '''
-                        npm install
-                        CYPRESS_BASE_URL=http://gateway-service:8000 npx cypress run --browser electron --env allure=true --config video=false,screenshotOnRunFailure=false
-                    '''
+                    catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        sh '''
+                            npm install
+                            # Очищаем папку перед запуском
+                            rm -rf allure-results
+                            CYPRESS_BASE_URL=http://gateway-service:8000 npx cypress run --browser electron --env allure=true --config video=false,screenshotOnRunFailure=false
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('AI Error Analysis') {
+            steps {
+                container('cypress') {
+                    withCredentials([string(credentialsId: 'GEMINI_API_KEY', variable: 'GOOGLE_API_KEY')]) {
+                        sh '''
+                            # Устанавливаем tsx глобально или локально (если его нет в package.json)
+                            npm install -g tsx
+                            
+                            # Убедимся, что пакет Google AI установлен (на случай если его нет в зависимостях)
+                            npm install @google/generative-ai
+                            
+                            # Запускаем наш скрипт
+                            npx tsx ai-analysis.ts
+                        '''
+                    }
                 }
             }
         }
@@ -192,6 +215,7 @@ spec:
             }
             
             archiveArtifacts artifacts: 'allure-report/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'allure-results/ai-analysis/*.md', allowEmptyArchive: true
             
             publishHTML(target: [
                 allowMissing: false,
